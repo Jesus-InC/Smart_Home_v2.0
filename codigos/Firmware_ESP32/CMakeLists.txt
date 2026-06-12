@@ -1,0 +1,30 @@
+idf_component_register(
+    SRCS
+        "Src/main.c"
+        "Src/actuadores.c"
+        "Src/config_usuario.c"
+        "Src/control_dimmer.c"
+        "Src/control_garaje.c"
+        "Src/control_global.c"
+        "Src/control_interior.c"
+        "Src/driver_dht22.c"
+        "Src/driver_fc28.c"
+        "Src/entradas_fisicas.c"
+        "Src/memoria_nvs.c"
+        "Src/portal_wifi.c"
+        "Src/tareas_sistema.c"
+        "Src/wifi_mqtt.c"
+    INCLUDE_DIRS
+        "Inc"
+    REQUIRES
+        nvs_flash
+        esp_wifi
+        esp_netif
+        esp_event
+        esp_http_server
+        mqtt
+        esp_driver_gpio
+        esp_driver_ledc
+        esp_adc
+        dht
+)
