@@ -186,14 +186,14 @@ async function guardarConfig() {
 
 function cancelarOverride(actuador) {
     const mapa = {
-        foco: "casa/interior/foco/override/cmd",
-        vent: "casa/interior/vent/override/cmd",
-        bomba: "casa/interior/bomba/override/cmd"
+        foco: "casa/interior/foco/cmd",
+        vent: "casa/interior/vent/cmd",
+        bomba: "casa/interior/bomba/cmd"
     };
 
     if (!mapa[actuador]) return;
 
-    publicar(mapa[actuador], "0");
+    publicar(mapa[actuador], "RESET");
 }
 
 cargarEstado();
