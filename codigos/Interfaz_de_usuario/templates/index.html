@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartHome V2 - Raspberry MQTT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header>
+        <div>
+            <h1>SmartHome V2</h1>
+            <p>Interfaz principal en Raspberry Pi usando MQTT</p>
+        </div>
+        <div class="estado-mqtt">
+            <span id="mqtt-dot" class="dot off"></span>
+            <span id="mqtt-text">MQTT --</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="card grande">
+            <h2>Estado general</h2>
+            <div class="grid-info">
+                <div><b>Modo interior:</b> <span id="modo_interior">--</span></div>
+                <div><b>E-STOP:</b> <span id="estop">--</span></div>
+                <div><b>Estado seguro:</b> <span id="estado_seguro">--</span></div>
+                <div><b>WiFi ESP32:</b> <span id="wifi_estado">--</span></div>
+                <div><b>IP ESP32:</b> <span id="wifi_ip">--</span></div>
+                <div>
+                    <b>RSSI:</b> <span id="wifi_rssi">--</span>
+                    <small>Intensidad WiFi. Cerca de -30 es excelente, -60 aceptable, -80 débil.</small>
+                </div>
+                <div><b>Última falla:</b> <span id="ultima_falla">--</span></div>
+                <div><b>Contador fallas:</b> <span id="contador_fallas">--</span></div>
+                <div><b>Última actualización:</b> <span id="ultima_actualizacion">--</span></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Modo interior</h2>
+            <div class="botonera">
+                <button onclick="publicar('casa/interior/modo/cmd', 'MANUAL')">Manual</button>
+                <button onclick="publicar('casa/interior/modo/cmd', 'AUTO')">Auto</button>
+                <button onclick="publicar('casa/interior/modo/cmd', 'SMART')">Smart</button>
+            </div>
+            <p class="nota">En AUTO/SMART la interfaz no controla directo ventilador ni bomba. Solo permite cancelar override.</p>
+        </section>
+
+        <section class="card">
+            <h2>Sensores</h2>
+            <div class="grid-info">
+                <div><b>Temperatura:</b> <span id="temp">--</span> °C</div>
+                <div><b>Humedad ambiente:</b> <span id="hum_amb">--</span> %</div>
+                <div><b>Humedad suelo:</b> <span id="hum_suelo">--</span> %</div>
+                <div><b>Cruce por cero:</b> <span id="zc_freq">--</span> Hz</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Foco</h2>
+            <div class="estado-actuador">
+                <span>Estado: <b id="foco">0</b>%</span>
+                <span>Override: <b id="foco_override">0</b></span>
+            </div>
+            <div class="botonera">
+                <button onclick="publicar('casa/interior/foco/cmd', '0')">OFF</button>
+                <button onclick="publicar('casa/interior/foco/cmd', '100')">ON</button>
+                <button id="btn_cancelar_foco" class="secundario" onclick="cancelarOverride('foco')">Cancelar override</button>
+            </div>
+            <label>Dimmer foco: <span id="foco_slider_val">0</span>%</label>
+            <input id="foco_slider" type="range" min="0" max="100" value="0" oninput="actualizarValorSlider('foco')" onchange="publicar('casa/interior/foco/cmd', this.value)">
+            <p class="nota">El foco se puede controlar en MANUAL, AUTO y SMART.</p>
+        </section>
+
+        <section class="card">
+            <h2>Ventilador</h2>
+            <div class="estado-actuador">
+                <span>Estado: <b id="vent">0</b>%</span>
+                <span>Override: <b id="vent_override">0</b></span>
+            </div>
+            <div class="botonera">
+                <button id="btn_vent_off" onclick="publicar('casa/interior/vent/cmd', '0')">OFF</button>
+                <button id="btn_vent_on" onclick="publicar('casa/interior/vent/cmd', '60')">ON</button>
+                <button id="btn_cancelar_vent" class="secundario" onclick="cancelarOverride('vent')">Cancelar override</button>
+            </div>
+            <label>PWM ventilador: <span id="vent_slider_val">0</span>%</label>
+            <input id="vent_slider" type="range" min="0" max="100" value="0" oninput="actualizarValorSlider('vent')" onchange="publicar('casa/interior/vent/cmd', this.value)">
+            <p id="nota_vent" class="nota"></p>
+        </section>
+
+        <section class="card">
+            <h2>Bomba</h2>
+            <div class="estado-actuador">
+                <span>Estado: <b id="bomba">0</b></span>
+                <span>Override: <b id="bomba_override">0</b></span>
+            </div>
+            <div class="botonera">
+                <button id="btn_bomba_off" onclick="publicar('casa/interior/bomba/cmd', '0')">OFF</button>
+                <button id="btn_bomba_on" onclick="publicar('casa/interior/bomba/cmd', '1')">ON</button>
+                <button id="btn_cancelar_bomba" class="secundario" onclick="cancelarOverride('bomba')">Cancelar override</button>
+            </div>
+            <p id="nota_bomba" class="nota"></p>
+        </section>
+
+        <section class="card">
+            <h2>Seguridad</h2>
+            <div class="botonera">
+                <button class="peligro" onclick="publicar('casa/sistema/estop/cmd', '1')">Activar E-STOP</button>
+                <button onclick="publicar('casa/sistema/estop/cmd', '0')">Liberar E-STOP</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Garaje</h2>
+            <div class="grid-info">
+                <div><b>Modo garaje:</b> <span id="garaje_modo">--</span></div>
+                <div><b>Portón:</b> <span id="porton">--</span></div>
+                <div><b>Alarma:</b> <span id="alarma">--</span></div>
+            </div>
+
+            <h3>Modo</h3>
+            <div class="botonera">
+                <button onclick="publicar('casa/garaje/modo/cmd', 'NORMAL')">Normal</button>
+                <button onclick="publicar('casa/garaje/modo/cmd', 'VISITA')">Visita</button>
+                <button onclick="publicar('casa/garaje/modo/cmd', 'MANUAL')">Manual</button>
+                <button onclick="publicar('casa/garaje/modo/cmd', 'SEGURO')">Seguro</button>
+            </div>
+
+            <h3>Portón</h3>
+            <div class="botonera">
+                <button onclick="publicar('casa/garaje/porton/cmd', 'CERRAR')">Abrir garaje</button>
+                <button onclick="publicar('casa/garaje/porton/cmd', 'ABRIR')">Cerrar garaje</button>
+                <button onclick="publicar('casa/garaje/porton/cmd', 'STOP')">STOP portón</button>
+            </div>
+            
+        </section>
+
+        <section class="card grande">
+            <h2>Configuración</h2>
+            <div class="form-grid">
+                <label>Temp mínima <input id="temp_min" type="number" step="1"></label>
+                <label>Temp máxima <input id="temp_max" type="number" step="1"></label>
+                <label>Hum. ambiente mínima <input id="hum_amb_min" type="number" step="1"></label>
+                <label>Hum. ambiente máxima <input id="hum_amb_max" type="number" step="1"></label>
+                <label>Hum. suelo mínima <input id="hum_suelo_min" type="number" step="1"></label>
+                <label>Hum. suelo máxima <input id="hum_suelo_max" type="number" step="1"></label>
+                <label>Umbral bomba AUTO <input id="bomba_umbral" type="number" step="1"></label>
+            </div>
+            <button onclick="guardarConfig()">Guardar configuración</button>
+        </section>
+
+        <section class="card">
+            <h2>Variables SMART desde Python</h2>
+            <div class="grid-info">
+                <div>
+                    <b>Presencia en casa:</b> <span id="presencia">--</span>
+                    <small>0 = no hay usuario en casa, 1 = sí hay usuario en casa.</small>
+                </div>
+                <div>
+                    <b>Probabilidad de lluvia:</b> <span id="prob_lluvia">--</span>
+                    <small>Valor enviado desde Python. Rango: 0.0 a 1.0.</small>
+                </div>
+            </div>
+        </section>
+
+
+
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

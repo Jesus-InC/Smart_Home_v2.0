@@ -1,0 +1,22 @@
+# Entorno virtual del proyecto
+.SH2/
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+
+# Variables de entorno / credenciales
+.env
+.env.local
+
+# Archivos temporales
+*.log
+.DS_Store
+
+# Configuración de editores
+.vscode/
+.idea/

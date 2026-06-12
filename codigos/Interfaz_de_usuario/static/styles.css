@@ -1,0 +1,166 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #eef2f6;
+    color: #17202a;
+}
+
+header {
+    background: #111827;
+    color: white;
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header p {
+    margin: 4px 0 0 0;
+    color: #cbd5e1;
+}
+
+main {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    gap: 16px;
+}
+
+.card {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.card.grande {
+    grid-column: 1 / -1;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+.grid-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 8px;
+}
+
+.grid-info div {
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+small {
+    display: block;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.botonera {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+button {
+    border: none;
+    background: #2563eb;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+button:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+}
+
+button.secundario {
+    background: #0f766e;
+}
+
+button.secundario:hover {
+    background: #115e59;
+}
+
+button.peligro {
+    background: #dc2626;
+}
+
+button.peligro:hover {
+    background: #b91c1c;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.estado-actuador {
+    display: flex;
+    justify-content: space-between;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+
+.nota {
+    color: #64748b;
+    font-size: 0.92rem;
+}
+
+.estado-mqtt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+}
+
+.dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot.on {
+    background: #22c55e;
+}
+
+.dot.off {
+    background: #ef4444;
+}
