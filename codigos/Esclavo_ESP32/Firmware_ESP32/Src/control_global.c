@@ -274,6 +274,16 @@ void control_global_toggle_ventilador_fisico(void)
         return;
     }
 
+    /*
+     * En AUTO/SMART el boton fisico del ventilador tiene doble funcion:
+     * 1) Si no hay override, interviene el ventilador y activa override.
+     * 2) Si ya hay override, lo cancela y devuelve el control a la logica automatica.
+     */
+    if (estado.modo_actual != MODO_MANUAL && estado.ventilador_override) {
+        estado.ventilador_override = false;
+        return;
+    }
+
     bool activar_override = estado.modo_actual != MODO_MANUAL;
 
     if (estado.velocidad_ventilador > 0) {

@@ -62,7 +62,6 @@ function aplicarModoInterfaz() {
 
     const ventOverride = String(estadoActual.vent_override || "0") === "1";
     const bombaOverride = String(estadoActual.bomba_override || "0") === "1";
-    const focoOverride = String(estadoActual.foco_override || "0") === "1";
 
     setDisabled("btn_vent_off", !esManual);
     setDisabled("btn_vent_on", !esManual);
@@ -71,7 +70,6 @@ function aplicarModoInterfaz() {
     setDisabled("btn_bomba_off", !esManual);
     setDisabled("btn_bomba_on", !esManual);
 
-    setDisabled("btn_cancelar_foco", !focoOverride);
     setDisabled("btn_cancelar_vent", !ventOverride);
     setDisabled("btn_cancelar_bomba", !bombaOverride);
 
@@ -119,12 +117,12 @@ async function cargarEstado() {
         const focoSlider = document.getElementById("foco_slider");
         const ventSlider = document.getElementById("vent_slider");
 
-        if (focoSlider && document.activeElement !== focoSlider) {
+        if (focoSlider) {
             focoSlider.value = foco;
             actualizarTexto("foco_slider_val", foco);
         }
 
-        if (ventSlider && document.activeElement !== ventSlider) {
+        if (ventSlider) {
             ventSlider.value = vent;
             actualizarTexto("vent_slider_val", vent);
         }
@@ -186,7 +184,6 @@ async function guardarConfig() {
 
 function cancelarOverride(actuador) {
     const mapa = {
-        foco: "casa/interior/foco/cmd",
         vent: "casa/interior/vent/cmd",
         bomba: "casa/interior/bomba/cmd"
     };
@@ -194,6 +191,17 @@ function cancelarOverride(actuador) {
     if (!mapa[actuador]) return;
 
     publicar(mapa[actuador], "RESET");
+}
+
+function olvidarWifiESP32() {
+    const confirmar = confirm(
+        "Esto borrará el WiFi y broker MQTT guardados en la ESP32. " +
+        "La ESP32 se reiniciará y volverá a SmartHome-Config. ¿Continuar?"
+    );
+
+    if (!confirmar) return;
+
+    publicar("casa/sistema/wifi/olvidar/cmd", "RESET");
 }
 
 cargarEstado();

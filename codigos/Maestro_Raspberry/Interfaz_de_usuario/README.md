@@ -12,7 +12,6 @@ La aplicación utiliza Flask para servir la página principal y comunicarse con 
 Interfaz_de_usuario
 ├── app.py
 ├── config.py
-├── requirements.txt
 ├── static
 │   ├── app.js
 │   └── styles.css

@@ -61,12 +61,10 @@
             <h2>Foco</h2>
             <div class="estado-actuador">
                 <span>Estado: <b id="foco">0</b>%</span>
-                <span>Override: <b id="foco_override">0</b></span>
             </div>
             <div class="botonera">
                 <button onclick="publicar('casa/interior/foco/cmd', '0')">OFF</button>
                 <button onclick="publicar('casa/interior/foco/cmd', '100')">ON</button>
-                <button id="btn_cancelar_foco" class="secundario" onclick="cancelarOverride('foco')">Cancelar override</button>
             </div>
             <label>Dimmer foco: <span id="foco_slider_val">0</span>%</label>
             <input id="foco_slider" type="range" min="0" max="100" value="0" oninput="actualizarValorSlider('foco')" onchange="publicar('casa/interior/foco/cmd', this.value)">
@@ -109,6 +107,12 @@
                 <button class="peligro" onclick="publicar('casa/sistema/estop/cmd', '1')">Activar E-STOP</button>
                 <button onclick="publicar('casa/sistema/estop/cmd', '0')">Liberar E-STOP</button>
             </div>
+
+            <h3>Red ESP32</h3>
+            <div class="botonera">
+                <button class="peligro" onclick="olvidarWifiESP32()">Olvidar WiFi ESP32</button>
+            </div>
+            <p class="nota">Borra SSID, contraseña y broker MQTT guardados en la ESP32. Luego la ESP32 reinicia y vuelve al AP SmartHome-Config.</p>
         </section>
 
         <section class="card">

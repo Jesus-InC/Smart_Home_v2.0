@@ -4,8 +4,10 @@
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 
-// Broker MQTT en la Raspberry Pi
-#define MQTT_URI        "mqtt://192.168.1.19:1883"
+// Broker MQTT por defecto en la Raspberry Pi
+// Se usa solo como respaldo si aun no existe broker MQTT guardado en NVS.
+#define MQTT_BROKER_HOST_DEFECTO     "192.168.1.19"
+#define MQTT_BROKER_PUERTO_DEFECTO   1883
 
 // AP minimo para provision WiFi
 #define PORTAL_WIFI_SSID        "SmartHome-Config"

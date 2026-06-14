@@ -120,6 +120,7 @@ static void tarea_entradas_fisicas(void *parametros)
             ESP_LOGI(TAG, "BTN_VENT detectado: ON/OFF");
 
             control_global_toggle_ventilador_fisico();
+            control_interior_ejecutar();
             wifi_mqtt_publicar_actuadores();
         }
 
@@ -127,6 +128,7 @@ static void tarea_entradas_fisicas(void *parametros)
             ESP_LOGI(TAG, "BTN_BOMBA detectado: ON/OFF");
 
             control_global_toggle_bomba_fisico();
+            control_interior_ejecutar();
             wifi_mqtt_publicar_actuadores();
         }
 

@@ -19,6 +19,7 @@
 #include "mqtt_client.h"
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 
@@ -33,6 +34,9 @@ static bool netif_sta_creada = false;
 static int reintentos_wifi = 0;
 static char ip_actual[16] = "0.0.0.0";
 static int rssi_actual = 0;
+static char broker_mqtt_host[64] = MQTT_BROKER_HOST_DEFECTO;
+static uint16_t broker_mqtt_puerto = MQTT_BROKER_PUERTO_DEFECTO;
+static char mqtt_uri_actual[96] = "";
 
 #define BIT_WIFI_CONECTADO BIT0
 
@@ -182,8 +186,18 @@ static void mqtt_iniciar(void)
 {
     if (mqtt_iniciado) return;
 
+    snprintf(
+        mqtt_uri_actual,
+        sizeof(mqtt_uri_actual),
+        "mqtt://%s:%u",
+        broker_mqtt_host,
+        broker_mqtt_puerto
+    );
+
+    ESP_LOGI(TAG, "Iniciando MQTT en %s", mqtt_uri_actual);
+
     esp_mqtt_client_config_t config_mqtt = {
-        .broker.address.uri = MQTT_URI
+        .broker.address.uri = mqtt_uri_actual
     };
 
     cliente_mqtt = esp_mqtt_client_init(&config_mqtt);
@@ -264,6 +278,9 @@ void wifi_mqtt_iniciar(void)
         iniciar_modo_ap_config();
         return;
     }
+
+    portal_wifi_cargar_broker(broker_mqtt_host, sizeof(broker_mqtt_host), &broker_mqtt_puerto);
+    ESP_LOGI(TAG, "Broker MQTT configurado: %s:%u", broker_mqtt_host, broker_mqtt_puerto);
 
     if (!netif_sta_creada) {
         esp_netif_create_default_wifi_sta();
