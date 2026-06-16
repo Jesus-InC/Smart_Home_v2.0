@@ -28,10 +28,11 @@ function estadoPortonVisible(valor) {
     const v = String(valor || "").toUpperCase();
 
     const mapa = {
-        "ABRIENDO": "CERRANDO",
-        "CERRANDO": "ABRIENDO",
-        "ABIERTO": "CERRADO",
-        "CERRADO": "ABIERTO"
+        "ABRIENDO": "ABRIENDO",
+        "CERRANDO": "CERRANDO",
+        "ABIERTO": "ABIERTO",
+        "CERRADO": "CERRADO"
+        "DETENIDO": "DETENIDO"
     };
 
     return mapa[v] || valor;
