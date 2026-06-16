@@ -31,7 +31,7 @@ function estadoPortonVisible(valor) {
         "ABRIENDO": "ABRIENDO",
         "CERRANDO": "CERRANDO",
         "ABIERTO": "ABIERTO",
-        "CERRADO": "CERRADO"
+        "CERRADO": "CERRADO",
         "DETENIDO": "DETENIDO"
     };
 
