@@ -287,10 +287,26 @@ void wifi_mqtt_iniciar(void)
         netif_sta_creada = true;
     }
 
-    wifi_config_t config_wifi = {0};
-    snprintf((char *)config_wifi.sta.ssid, sizeof(config_wifi.sta.ssid), "%s", ssid);
-    snprintf((char *)config_wifi.sta.password, sizeof(config_wifi.sta.password), "%s", clave);
-    config_wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+	wifi_config_t config_wifi = {0};
+
+	size_t ssid_len = strlen(ssid);
+	size_t clave_len = strlen(clave);
+
+	if (ssid_len == 0 || ssid_len > sizeof(config_wifi.sta.ssid)) {
+	    ESP_LOGE(TAG, "SSID invalido. Longitud: %u", (unsigned)ssid_len);
+	    iniciar_modo_ap_config();
+	    return;
+	}
+
+	if (clave_len > sizeof(config_wifi.sta.password)) {
+	    ESP_LOGE(TAG, "Clave WiFi invalida. Longitud: %u", (unsigned)clave_len);
+	    iniciar_modo_ap_config();
+	    return;
+	}
+
+	memcpy(config_wifi.sta.ssid, ssid, ssid_len);
+	memcpy(config_wifi.sta.password, clave, clave_len);
+	config_wifi.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &config_wifi));

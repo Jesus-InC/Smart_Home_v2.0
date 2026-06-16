@@ -8,7 +8,7 @@ from typing import Optional
 import paho.mqtt.client as mqtt
 
 # CONFIGURACIÓN MQTT
-BROKER_DEFECTO = "192.168.1.19"
+BROKER_DEFECTO = "127.0.0.1"
 PUERTO_DEFECTO = 1883
 KEEPALIVE = 60
 CLIENT_ID = "rasp_smart_python_v2"

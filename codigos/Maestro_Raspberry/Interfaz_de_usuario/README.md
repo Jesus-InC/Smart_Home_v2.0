@@ -80,7 +80,7 @@ Contiene la estructura del panel de control que visualiza el usuario desde el na
 
 ## ▶️ Ejecución
 
-Desde esta carpeta, activar el entorno virtual e instalar dependencias si corresponde:
+Desde la carpeta principal, activar el entorno virtual e instalar dependencias si corresponde:
 
 ```bash
 python -m pip install -r requirements.txt
