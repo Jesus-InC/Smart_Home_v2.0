@@ -1,3 +1,0 @@
-numpy
-opencv-python-headless
-paho-mqtt==2.1.0

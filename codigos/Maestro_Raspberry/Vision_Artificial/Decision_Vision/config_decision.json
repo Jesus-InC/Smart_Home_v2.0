@@ -1,0 +1,65 @@
+{
+  "mqtt": {
+    "host": "127.0.0.1",
+    "port": 1883,
+    "keepalive": 60,
+    "client_id": "rasp_decision_vision",
+    "topic_percepcion": "casa/vision/percepcion",
+    "topic_laptop_estado": "casa/vision/laptop/estado"
+  },
+  "umbrales": {
+    "score_dueno": 70,
+    "score_dudoso": 40,
+    "confianza_minima": 0.45,
+    "max_edad_percepcion_s": 2.5,
+    "gracia_arranque_s": 12.0,
+    "t_bloqueo_b_s": 12.0,
+    "t_alerta_a_s": 10.0,
+    "t_notificar_c_s": 3.0,
+    "t_baja_confianza_s": 4.0,
+    "t_multiples_s": 1.5,
+    "t_d_libre_para_cerrar_s": 2.5,
+    "timeout_porton_abierto_s": 25.0,
+    "cooldown_comando_s": 3.0,
+    "cooldown_evento_s": 5.0
+  },
+  "seguridad": {
+    "detener_si_obstaculo_d": true,
+    "seguridad_d_en_manual": true,
+    "forzar_seguro_si_falla_camara": true,
+    "forzar_seguro_si_laptop_offline": true,
+    "forzar_seguro_por_multiples": true,
+    "multiples_requiere_yolo": true,
+    "forzar_seguro_por_baja_iluminacion": false,
+    "activar_alarma_en_seguro": true,
+    "forzar_seguro_estando_en_manual": false
+  },
+  "automatizacion": {
+    "apertura_automatica": true,
+    "cierre_automatico_tras_paso_d": true,
+    "cerrar_sin_detectar_paso_d": false,
+    "exigir_trayectoria_ingreso": true
+  },
+  "comandos": {
+    "abrir": "ABRIR",
+    "cerrar": "CERRAR",
+    "stop": "STOP",
+    "alarma_on": "ON",
+    "alarma_off": "OFF"
+  },
+  "topicos": {
+    "modo_estado": "casa/garaje/modo/estado",
+    "modo_cmd": "casa/garaje/modo/cmd",
+    "porton_estado": "casa/garaje/porton/estado",
+    "porton_cmd": "casa/garaje/porton/cmd",
+    "alarma_estado": "casa/garaje/alarma/estado",
+    "alarma_cmd": "casa/garaje/alarma/cmd",
+    "estop_estado": "casa/sistema/estop/estado",
+    "estado_seguro": "casa/sistema/estado_seguro",
+    "fc_abierto": "casa/fisico/fc_abierto/estado",
+    "fc_cerrado": "casa/fisico/fc_cerrado/estado",
+    "decision_estado": "casa/vision/decision/estado",
+    "decision_online": "casa/vision/decision/online",
+    "evento": "casa/vision/evento"
+  }
+}
