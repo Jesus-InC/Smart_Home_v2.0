@@ -180,10 +180,9 @@ class CoordinadorMqtt:
         forzar: bool = False,
     ) -> bool:
         texto = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-        if es_comando and self.solo_monitoreo:
-            print(f"[SOLO MONITOREO] No se envió {topic} = {texto}")
-            return False
 
+        # El cooldown también aplica en --solo-monitoreo; antes el mensaje se
+        # imprimía cada 100 ms y hacía ilegible la terminal.
         if es_comando and not forzar:
             clave = (topic, texto)
             ahora = time.monotonic()
@@ -191,6 +190,10 @@ class CoordinadorMqtt:
             if ahora - self._ultimos_comandos.get(clave, 0.0) < cooldown:
                 return False
             self._ultimos_comandos[clave] = ahora
+
+        if es_comando and self.solo_monitoreo:
+            print(f"[SOLO MONITOREO] No se envió {topic} = {texto}")
+            return False
 
         self.client.publish(topic, texto, qos=qos, retain=retain)
         if es_comando:
