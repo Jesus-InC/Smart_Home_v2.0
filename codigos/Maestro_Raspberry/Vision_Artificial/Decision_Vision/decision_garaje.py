@@ -39,6 +39,8 @@ class EstadoCiclo:
     d_libre_desde: Optional[float] = None
     porton_abierto_desde: Optional[float] = None
     alarma_activada_por_vision: bool = False
+    alarma_razon: str = ""
+    d_ocupada_anterior: bool = False
     seguro_ordenado_por_vision: bool = False
     ultima_decision: str = "INICIANDO"
 
@@ -202,7 +204,7 @@ class CoordinadorMqtt:
 
     def evento(self, mensaje: str) -> None:
         ahora = time.monotonic()
-        cooldown = float(self.cfg["umbrales"].get("cooldown_evento_s", 5.0))
+        cooldown = max(20.0, float(self.cfg["umbrales"].get("cooldown_evento_s", 20.0)))
         if ahora - self._ultimo_evento.get(mensaje, 0.0) < cooldown:
             return
         self._ultimo_evento[mensaje] = ahora
@@ -218,6 +220,7 @@ class LogicaDecisionGaraje:
         self.t_inicio = time.monotonic()
         self.detener = False
         self._t_ultimo_estado = 0.0
+        self._ultima_decision_impresa = ""
 
     @staticmethod
     def _es_activo(valor: Any) -> bool:
@@ -234,12 +237,20 @@ class LogicaDecisionGaraje:
             while not self.detener:
                 estado = self.mqtt.snapshot()
                 self._evaluar(estado)
+                self._imprimir_decision_si_cambia()
                 self._publicar_estado(estado)
                 time.sleep(0.10)
         finally:
             self._desactivar_alarma_si_corresponde()
             self.mqtt.cerrar()
             print("[FIN] Decisión detenida")
+
+    def _imprimir_decision_si_cambia(self) -> None:
+        decision = str(self.ciclo.ultima_decision)
+        if decision == self._ultima_decision_impresa:
+            return
+        self._ultima_decision_impresa = decision
+        print(f"[DECISIÓN] {decision}")
 
     def _evaluar(self, estado: EstadoCompartido) -> None:
         ahora = time.monotonic()
@@ -269,6 +280,12 @@ class LogicaDecisionGaraje:
         zona = str(percepcion.get("zona", "NINGUNA")).upper()
         self._actualizar_permanencia_zona(zona, ahora)
         obstaculo_d = bool(percepcion.get("obstaculo_d", False))
+
+        if obstaculo_d != self.ciclo.d_ocupada_anterior:
+            self.ciclo.d_ocupada_anterior = obstaculo_d
+            self.mqtt.evento(
+                "Zona D ocupada detectada" if obstaculo_d else "Zona D nuevamente libre"
+            )
 
         # La zona D es una protección independiente del modo automático.
         if obstaculo_d:
@@ -394,7 +411,12 @@ class LogicaDecisionGaraje:
             return None, "No se recibió percepción de la laptop"
 
         edad = ahora - estado.t_percepcion_monotonic
-        if edad > float(self.cfg["umbrales"].get("max_edad_percepcion_s", 2.5)):
+        # La visión publica varias veces por segundo, pero Windows/OpenCV puede
+        # tener pausas breves al mover ventanas o cambiar de escena. Ocho
+        # segundos evita falsos "vencida"; el LWT OFFLINE sigue protegiendo
+        # ante una desconexión real de la laptop.
+        max_edad = max(8.0, float(self.cfg["umbrales"].get("max_edad_percepcion_s", 8.0)))
+        if edad > max_edad:
             return None, f"Percepción vencida ({edad:.1f} s)"
 
         p = estado.percepcion
@@ -520,15 +542,23 @@ class LogicaDecisionGaraje:
             self.ciclo.zona_desde = ahora
 
     def _activar_alarma(self, razon: str) -> None:
-        if not self.ciclo.alarma_activada_por_vision:
+        nueva_activacion = not self.ciclo.alarma_activada_por_vision
+        cambio_razon = razon != self.ciclo.alarma_razon
+
+        if nueva_activacion:
             enviado = self.mqtt.publicar(
                 self.cfg["topicos"]["alarma_cmd"],
                 self.cfg["comandos"]["alarma_on"],
                 es_comando=True,
             )
-            if enviado:
+            # En solo monitoreo el comando no sale al broker, pero se simula
+            # el estado interno para no solicitar ON en cada ciclo.
+            if enviado or self.mqtt.solo_monitoreo:
                 self.ciclo.alarma_activada_por_vision = True
-        self.mqtt.evento(razon)
+
+        if nueva_activacion or cambio_razon:
+            self.ciclo.alarma_razon = razon
+            self.mqtt.evento(razon)
 
     def _desactivar_alarma_si_corresponde(self) -> None:
         if not self.ciclo.alarma_activada_por_vision:
@@ -538,8 +568,9 @@ class LogicaDecisionGaraje:
             self.cfg["comandos"]["alarma_off"],
             es_comando=True,
         )
-        if enviado:
+        if enviado or self.mqtt.solo_monitoreo:
             self.ciclo.alarma_activada_por_vision = False
+            self.ciclo.alarma_razon = ""
 
     def _comando_porton(self, payload: str) -> bool:
         return self.mqtt.publicar(

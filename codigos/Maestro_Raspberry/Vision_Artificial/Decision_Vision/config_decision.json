@@ -11,7 +11,7 @@
     "score_dueno": 70,
     "score_dudoso": 40,
     "confianza_minima": 0.45,
-    "max_edad_percepcion_s": 2.5,
+    "max_edad_percepcion_s": 8.0,
     "gracia_arranque_s": 12.0,
     "t_bloqueo_b_s": 12.0,
     "t_alerta_a_s": 10.0,
@@ -20,8 +20,8 @@
     "t_multiples_s": 1.5,
     "t_d_libre_para_cerrar_s": 2.5,
     "timeout_porton_abierto_s": 25.0,
-    "cooldown_comando_s": 3.0,
-    "cooldown_evento_s": 5.0
+    "cooldown_comando_s": 5.0,
+    "cooldown_evento_s": 20.0
   },
   "seguridad": {
     "detener_si_obstaculo_d": true,
