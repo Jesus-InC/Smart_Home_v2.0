@@ -136,9 +136,20 @@
                 <button onclick="publicar('casa/garaje/porton/cmd', 'CERRAR')">Cerrar garaje</button>
                 <button onclick="publicar('casa/garaje/porton/cmd', 'STOP')">STOP portón</button>
             </div>
-            
         </section>
 
+        <section class="card grande">
+            <h2>Notificaciones de Visión Artificial</h2>
+            <div class="grid-info" style="margin-bottom: 10px;">
+                <div><b>Decisión actual:</b> <strong id="decision_vision" style="color: #2563eb;">--</strong></div>
+                <div><b>Zona detectada:</b> <span id="zona_vision">--</span></div>
+            </div>
+            <div id="caja_notificaciones" style="height: 150px; overflow-y: auto; background: #1e293b; color: #10b981; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 14px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                </div>
+            <div class="botonera" style="margin-top: 10px;">
+                <button class="secundario" onclick="limpiarNotificaciones()">Limpiar historial</button>
+            </div>
+        </section>
         <section class="card grande">
             <h2>Configuración</h2>
             <div class="form-grid">
@@ -166,8 +177,6 @@
                 </div>
             </div>
         </section>
-
-
 
     </main>
 

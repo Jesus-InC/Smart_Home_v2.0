@@ -42,6 +42,7 @@ class EstadoCiclo:
     alarma_razon: str = ""
     d_ocupada_anterior: bool = False
     ultima_decision: str = "INICIANDO"
+    tiempo_ultimo_comando: float = 0.0
 
 
 class CoordinadorMqtt:
@@ -182,8 +183,6 @@ class CoordinadorMqtt:
     ) -> bool:
         texto = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
-        # El cooldown también aplica en --solo-monitoreo; antes el mensaje se
-        # imprimía cada 100 ms y hacía ilegible la terminal.
         if es_comando and not forzar:
             clave = (topic, texto)
             ahora = time.monotonic()
@@ -278,7 +277,13 @@ class LogicaDecisionGaraje:
 
         zona = str(percepcion.get("zona", "NINGUNA")).upper()
         self._actualizar_permanencia_zona(zona, ahora)
+        
         obstaculo_d = bool(percepcion.get("obstaculo_d", False))
+
+        # Ventana de gracia: ignorar falso positivo de D por 2.5s al arrancar el cierre
+        tiempo_desde_comando = ahora - self.ciclo.tiempo_ultimo_comando
+        if porton == "CERRANDO" and tiempo_desde_comando < 2.5:
+            obstaculo_d = False
 
         if obstaculo_d != self.ciclo.d_ocupada_anterior:
             self.ciclo.d_ocupada_anterior = obstaculo_d
@@ -297,33 +302,45 @@ class LogicaDecisionGaraje:
                     self.ciclo.ultima_decision = "Obstáculo en D: portón detenido"
                     self.mqtt.evento(self.ciclo.ultima_decision)
                     return
-        elif self.ciclo.ciclo_ingreso_activo:
+        else:
             if self.ciclo.d_libre_desde is None:
                 self.ciclo.d_libre_desde = ahora
+            
+            # REANUDAR CIERRE TRAS RETIRAR OBSTÁCULO (Solo Modos Automáticos)
+            if porton == "DETENIDO" and modo in {"NORMAL", "VISITA"}:
+                espera_d = float(self.cfg["umbrales"].get("t_d_libre_para_cerrar_s", 2.5))
+                if ahora - self.ciclo.d_libre_desde > espera_d:
+                    self._comando_porton(self.cfg["comandos"]["cerrar"])
+                    self.ciclo.ultima_decision = "Obstáculo retirado de D: reanudando cierre"
+                    return
 
         if modo == "MANUAL":
             self.ciclo.ultima_decision = "Modo MANUAL: solo supervisión; D permanece protegida"
             self._desactivar_alarma_si_corresponde()
             self._reset_ciclo_ingreso()
             return
-        if modo == "VISITA":
-            self.ciclo.ultima_decision = "Modo VISITA: sin apertura ni alarma automática"
-            self._desactivar_alarma_si_corresponde()
-            self._reset_ciclo_ingreso()
-            return
-        if modo != "NORMAL":
+
+        if modo not in {"NORMAL", "VISITA"}:
             self.ciclo.ultima_decision = f"Esperando estado válido del modo garaje ({modo})"
             return
 
-        if self._condicion_critica(percepcion, ahora, porton):
+        if self._condicion_critica(percepcion, ahora, porton, modo):
             return
 
-        # Cierre automático solo para un ciclo que fue iniciado por esta lógica.
+        # Cierre automático para NORMAL y VISITA
         if self._evaluar_cierre_automatico(percepcion, estado, ahora):
             return
 
         if obstaculo_d:
             self.ciclo.ultima_decision = "Zona D ocupada: movimiento automático bloqueado"
+            return
+
+        # Congelamiento del dueño (Retención de alarma al abrir)
+        if porton in {"ABRIENDO", "ABIERTO"}:
+            self.ciclo.baja_confianza_desde = None
+            self.ciclo.multiples_desde = None
+            self._desactivar_alarma_si_corresponde()
+            self.ciclo.ultima_decision = f"Portón {porton}: suprimiendo alarmas y monitoreando"
             return
 
         vehiculo = bool(percepcion.get("vehiculo_detectado", False))
@@ -361,16 +378,19 @@ class LogicaDecisionGaraje:
                 self.ciclo.ultima_decision = "Dueño probable en A, pero sin trayectoria de ingreso"
                 return
 
-            if score >= int(u.get("score_dudoso", 40)):
-                self.ciclo.ultima_decision = "Vehículo dudoso en A: no abrir y notificar"
-                self.mqtt.evento(self.ciclo.ultima_decision)
-                return
+            if modo == "NORMAL":
+                if score >= int(u.get("score_dudoso", 40)):
+                    self.ciclo.ultima_decision = "Vehículo dudoso en A: no abrir y notificar"
+                    self.mqtt.evento(self.ciclo.ultima_decision)
+                    return
 
-            if permanencia >= float(u.get("t_alerta_a_s", 10.0)):
-                self._activar_alarma("Vehículo ajeno permanece en zona A")
-                self.ciclo.ultima_decision = "Ajeno en A: alarma por permanencia"
+                if permanencia >= float(u.get("t_alerta_a_s", 10.0)):
+                    self._activar_alarma("Vehículo ajeno permanece en zona A")
+                    self.ciclo.ultima_decision = "Ajeno en A: alarma por permanencia"
+                else:
+                    self.ciclo.ultima_decision = f"Ajeno en A: monitoreando ({permanencia:.1f} s)"
             else:
-                self.ciclo.ultima_decision = f"Ajeno en A: monitoreando ({permanencia:.1f} s)"
+                self.ciclo.ultima_decision = "Modo VISITA: ignorando vehículo dudoso/ajeno en A"
             return
 
         if zona == "B":
@@ -378,20 +398,26 @@ class LogicaDecisionGaraje:
                 self.ciclo.ultima_decision = "Auto del dueño en B: no abrir"
                 self._desactivar_alarma_si_corresponde()
                 return
-            if permanencia >= float(u.get("t_bloqueo_b_s", 12.0)):
-                self._activar_alarma("Vehículo ajeno bloquea la zona B")
-                self.ciclo.ultima_decision = "Ajeno en B: alarma visual y notificación"
+            if modo == "NORMAL":
+                if permanencia >= float(u.get("t_bloqueo_b_s", 12.0)):
+                    self._activar_alarma("Vehículo ajeno bloquea la zona B")
+                    self.ciclo.ultima_decision = "Ajeno en B: alarma visual y notificación"
+                else:
+                    self.ciclo.ultima_decision = f"Ajeno/dudoso en B: esperando permanencia ({permanencia:.1f} s)"
             else:
-                self.ciclo.ultima_decision = f"Ajeno/dudoso en B: esperando permanencia ({permanencia:.1f} s)"
+                self.ciclo.ultima_decision = "Modo VISITA: ignorando vehículo ajeno en B"
             return
 
         if zona == "C":
             self._desactivar_alarma_si_corresponde()
-            if score < int(u.get("score_dueno", 70)) and permanencia >= float(u.get("t_notificar_c_s", 3.0)):
-                self.mqtt.evento("Vehículo ajeno detectado en zona C")
-                self.ciclo.ultima_decision = "Ajeno en C: solo notificación"
+            if modo == "NORMAL":
+                if score < int(u.get("score_dueno", 70)) and permanencia >= float(u.get("t_notificar_c_s", 3.0)):
+                    self.mqtt.evento("Vehículo ajeno detectado en zona C")
+                    self.ciclo.ultima_decision = "Ajeno en C: solo notificación"
+                else:
+                    self.ciclo.ultima_decision = "Vehículo en C: monitoreando"
             else:
-                self.ciclo.ultima_decision = "Vehículo en C: monitoreando"
+                self.ciclo.ultima_decision = "Modo VISITA: ignorando vehículo en C"
             return
 
         self.ciclo.ultima_decision = "Vehículo fuera de las zonas configuradas"
@@ -407,10 +433,6 @@ class LogicaDecisionGaraje:
             return None, "No se recibió percepción de la laptop"
 
         edad = ahora - estado.t_percepcion_monotonic
-        # La visión publica varias veces por segundo, pero Windows/OpenCV puede
-        # tener pausas breves al mover ventanas o cambiar de escena. Ocho
-        # segundos evita falsos "vencida"; el LWT OFFLINE sigue protegiendo
-        # ante una desconexión real de la laptop.
         max_edad = max(8.0, float(self.cfg["umbrales"].get("max_edad_percepcion_s", 8.0)))
         if edad > max_edad:
             return None, f"Percepción vencida ({edad:.1f} s)"
@@ -429,10 +451,6 @@ class LogicaDecisionGaraje:
         if porton in {"ABRIENDO", "CERRANDO"}:
             self._comando_porton(self.cfg["comandos"]["stop"])
 
-        # Ya no existe el modo SEGURO: el sistema se queda en el modo actual
-        # (NORMAL/VISITA/MANUAL) pero la automatización queda bloqueada por
-        # el "return" en _evaluar(); aquí solo se activa la alarma si
-        # corresponde, sin tocar modo_garaje.
         seg = self.cfg["seguridad"]
         es_laptop = "OFFLINE" in razon or "Percepción" in razon or "percepción" in razon
         debe_alertar = bool(seg.get("alarma_si_laptop_offline", True)) if es_laptop else bool(seg.get("alarma_si_falla_camara", True))
@@ -441,7 +459,7 @@ class LogicaDecisionGaraje:
         if debe_alertar:
             self._activar_alarma(f"Bloqueo de seguridad por visión: {razon}")
 
-    def _condicion_critica(self, p: Dict[str, Any], ahora: float, porton: str) -> bool:
+    def _condicion_critica(self, p: Dict[str, Any], ahora: float, porton: str, modo: str) -> bool:
         seg = self.cfg["seguridad"]
         u = self.cfg["umbrales"]
 
@@ -457,7 +475,7 @@ class LogicaDecisionGaraje:
                 self.mqtt.evento(self.ciclo.ultima_decision)
                 if porton in {"ABRIENDO", "CERRANDO"}:
                     self._comando_porton(self.cfg["comandos"]["stop"])
-                if bool(seg.get("alarma_por_multiples", True)):
+                if modo == "NORMAL" and bool(seg.get("alarma_por_multiples", True)):
                     self._activar_alarma("Bloqueo de seguridad por múltiples vehículos")
                 return True
         else:
@@ -470,7 +488,7 @@ class LogicaDecisionGaraje:
             if ahora - self.ciclo.baja_confianza_desde >= float(u.get("t_baja_confianza_s", 4.0)):
                 self.ciclo.ultima_decision = "Iluminación insuficiente: no abrir automáticamente"
                 self.mqtt.evento(self.ciclo.ultima_decision)
-                if bool(seg.get("alarma_por_baja_iluminacion", False)):
+                if modo == "NORMAL" and bool(seg.get("alarma_por_baja_iluminacion", False)):
                     self._activar_alarma("Bloqueo de seguridad por baja iluminación")
                 return True
         else:
@@ -546,8 +564,6 @@ class LogicaDecisionGaraje:
                 self.cfg["comandos"]["alarma_on"],
                 es_comando=True,
             )
-            # En solo monitoreo el comando no sale al broker, pero se simula
-            # el estado interno para no solicitar ON en cada ciclo.
             if enviado or self.mqtt.solo_monitoreo:
                 self.ciclo.alarma_activada_por_vision = True
 
@@ -568,13 +584,16 @@ class LogicaDecisionGaraje:
             self.ciclo.alarma_razon = ""
 
     def _comando_porton(self, payload: str) -> bool:
-        return self.mqtt.publicar(
+        enviado = self.mqtt.publicar(
             self.cfg["topicos"]["porton_cmd"],
             payload,
             qos=1,
             retain=False,
             es_comando=True,
         )
+        if enviado or self.mqtt.solo_monitoreo:
+            self.ciclo.tiempo_ultimo_comando = time.monotonic()
+        return enviado
 
     def _comando_modo(self, payload: str) -> bool:
         return self.mqtt.publicar(
