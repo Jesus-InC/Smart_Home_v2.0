@@ -41,7 +41,6 @@ class EstadoCiclo:
     alarma_activada_por_vision: bool = False
     alarma_razon: str = ""
     d_ocupada_anterior: bool = False
-    seguro_ordenado_por_vision: bool = False
     ultima_decision: str = "INICIANDO"
 
 
@@ -302,9 +301,6 @@ class LogicaDecisionGaraje:
             if self.ciclo.d_libre_desde is None:
                 self.ciclo.d_libre_desde = ahora
 
-        if modo == "SEGURO":
-            self.ciclo.ultima_decision = "Modo SEGURO: solo supervisión"
-            return
         if modo == "MANUAL":
             self.ciclo.ultima_decision = "Modo MANUAL: solo supervisión; D permanece protegida"
             self._desactivar_alarma_si_corresponde()
@@ -433,16 +429,17 @@ class LogicaDecisionGaraje:
         if porton in {"ABRIENDO", "CERRANDO"}:
             self._comando_porton(self.cfg["comandos"]["stop"])
 
+        # Ya no existe el modo SEGURO: el sistema se queda en el modo actual
+        # (NORMAL/VISITA/MANUAL) pero la automatización queda bloqueada por
+        # el "return" en _evaluar(); aquí solo se activa la alarma si
+        # corresponde, sin tocar modo_garaje.
         seg = self.cfg["seguridad"]
         es_laptop = "OFFLINE" in razon or "Percepción" in razon or "percepción" in razon
-        forzar = bool(seg.get("forzar_seguro_si_laptop_offline", True)) if es_laptop else bool(seg.get("forzar_seguro_si_falla_camara", True))
-        if modo == "MANUAL" and not bool(seg.get("forzar_seguro_estando_en_manual", False)):
-            forzar = False
-        if forzar and modo != "SEGURO":
-            self._comando_modo("SEGURO")
-            self.ciclo.seguro_ordenado_por_vision = True
-            if bool(seg.get("activar_alarma_en_seguro", True)):
-                self._activar_alarma(f"Modo seguro por visión: {razon}")
+        debe_alertar = bool(seg.get("alarma_si_laptop_offline", True)) if es_laptop else bool(seg.get("alarma_si_falla_camara", True))
+        if modo == "MANUAL" and not bool(seg.get("alarma_estando_en_manual", False)):
+            debe_alertar = False
+        if debe_alertar:
+            self._activar_alarma(f"Bloqueo de seguridad por visión: {razon}")
 
     def _condicion_critica(self, p: Dict[str, Any], ahora: float, porton: str) -> bool:
         seg = self.cfg["seguridad"]
@@ -458,12 +455,10 @@ class LogicaDecisionGaraje:
             if ahora - self.ciclo.multiples_desde >= float(u.get("t_multiples_s", 1.5)):
                 self.ciclo.ultima_decision = "Múltiples vehículos: decisión automática ambigua"
                 self.mqtt.evento(self.ciclo.ultima_decision)
-                if bool(seg.get("forzar_seguro_por_multiples", True)):
-                    if porton in {"ABRIENDO", "CERRANDO"}:
-                        self._comando_porton(self.cfg["comandos"]["stop"])
-                    self._comando_modo("SEGURO")
-                    if bool(seg.get("activar_alarma_en_seguro", True)):
-                        self._activar_alarma("Modo seguro por múltiples vehículos")
+                if porton in {"ABRIENDO", "CERRANDO"}:
+                    self._comando_porton(self.cfg["comandos"]["stop"])
+                if bool(seg.get("alarma_por_multiples", True)):
+                    self._activar_alarma("Bloqueo de seguridad por múltiples vehículos")
                 return True
         else:
             self.ciclo.multiples_desde = None
@@ -475,8 +470,8 @@ class LogicaDecisionGaraje:
             if ahora - self.ciclo.baja_confianza_desde >= float(u.get("t_baja_confianza_s", 4.0)):
                 self.ciclo.ultima_decision = "Iluminación insuficiente: no abrir automáticamente"
                 self.mqtt.evento(self.ciclo.ultima_decision)
-                if bool(seg.get("forzar_seguro_por_baja_iluminacion", False)):
-                    self._comando_modo("SEGURO")
+                if bool(seg.get("alarma_por_baja_iluminacion", False)):
+                    self._activar_alarma("Bloqueo de seguridad por baja iluminación")
                 return True
         else:
             self.ciclo.baja_confianza_desde = None

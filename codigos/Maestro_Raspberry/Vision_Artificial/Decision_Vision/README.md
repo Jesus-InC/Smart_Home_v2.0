@@ -12,7 +12,7 @@ Este módulo recibe la percepción calculada por la laptop, consulta el estado r
 - Detener el portón si D queda ocupada.
 - Activar alarma por permanencia de un vehículo ajeno.
 - Cerrar después de detectar el paso por D y comprobar que D vuelve a estar libre.
-- Pasar a modo seguro ante pérdida crítica de visión, según configuración.
+- Ante pérdida crítica de visión (falla de cámara, laptop offline, múltiples vehículos), bloquear la automatización y, según configuración, activar la alarma — sin cambiar el modo del garaje (solo existen NORMAL, VISITA y MANUAL).
 
 ## Archivos
 
@@ -71,11 +71,11 @@ python decision_garaje.py
 ```text
 casa/garaje/porton/cmd   ABRIR / CERRAR / STOP
 casa/garaje/alarma/cmd   ON / OFF
-casa/garaje/modo/cmd     SEGURO
+casa/garaje/modo/cmd     NORMAL / VISITA / MANUAL
 ```
 
 No hace falta modificar el firmware actual para esta primera integración.
 
-## Nota sobre modo SEGURO
+## Nota sobre bloqueo de seguridad (sin modo SEGURO)
 
-Cuando la Raspberry ordena `SEGURO`, el firmware conserva ese modo hasta que el usuario seleccione nuevamente un modo permitido desde la interfaz o el control correspondiente. Esto evita que el sistema reanude automáticamente una maniobra después de perder la visión.
+Este proyecto solo contempla los modos NORMAL, VISITA y MANUAL. Cuando la visión detecta una condición crítica (cámara caída, laptop offline, múltiples vehículos, baja iluminación), la Raspberry **no cambia el modo del garaje**: simplemente detiene el portón si estaba en movimiento, bloquea la apertura/cierre automático mientras dure la condición y, según `config_decision.json`, activa la alarma. En cuanto la percepción vuelve a ser válida, la automatización se reanuda sola en el modo en el que ya estaba el usuario.

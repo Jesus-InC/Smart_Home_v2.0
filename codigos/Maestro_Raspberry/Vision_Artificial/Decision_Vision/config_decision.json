@@ -26,13 +26,12 @@
   "seguridad": {
     "detener_si_obstaculo_d": true,
     "seguridad_d_en_manual": true,
-    "forzar_seguro_si_falla_camara": true,
-    "forzar_seguro_si_laptop_offline": true,
-    "forzar_seguro_por_multiples": true,
+    "alarma_si_falla_camara": true,
+    "alarma_si_laptop_offline": true,
+    "alarma_por_multiples": true,
     "multiples_requiere_yolo": true,
-    "forzar_seguro_por_baja_iluminacion": false,
-    "activar_alarma_en_seguro": true,
-    "forzar_seguro_estando_en_manual": false
+    "alarma_por_baja_iluminacion": false,
+    "alarma_estando_en_manual": false
   },
   "automatizacion": {
     "apertura_automatica": true,
