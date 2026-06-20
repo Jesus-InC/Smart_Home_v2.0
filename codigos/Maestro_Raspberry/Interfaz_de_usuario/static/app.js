@@ -58,7 +58,6 @@ function actualizarValorSlider(nombre) {
     }
 }
 
-// === NUEVAS FUNCIONES PARA NOTIFICACIONES DE VISIÓN ===
 function agregarNotificacion(mensaje) {
     const caja = document.getElementById("caja_notificaciones");
     if (!caja) return;
@@ -66,13 +65,11 @@ function agregarNotificacion(mensaje) {
     const div = document.createElement("div");
     const hora = new Date().toLocaleTimeString();
     
-    // Formato tipo terminal: [HH:MM:SS] Mensaje...
     div.innerHTML = `<span style="color: #64748b;">[${hora}]</span> ${mensaje}`;
     div.style.marginBottom = "4px";
 
     caja.appendChild(div);
     
-    // Auto-scroll hacia el último mensaje
     caja.scrollTop = caja.scrollHeight; 
 }
 
@@ -81,7 +78,6 @@ function limpiarNotificaciones() {
     if (caja) caja.innerHTML = "";
     ultimoEvento = "";
 }
-// ======================================================
 
 function aplicarModoInterfaz() {
     const modo = String(estadoActual.modo_interior || "").toUpperCase();
@@ -134,13 +130,10 @@ async function cargarEstado() {
             texto.textContent = "MQTT desconectado";
         }
 
-        // Actualiza todos los spans mapeados
         for (const [clave, valor] of Object.entries(estadoActual)) {
             actualizarTexto(clave, valor);
         }
 
-        // === LÓGICA PARA VISIÓN ARTIFICIAL ===
-        // 1. Extraer Decisión y Zona desde el JSON (si el backend lo pasa como string JSON)
         let jsonDecision = estadoActual.decision_estado || estadoActual["casa/vision/decision/estado"];
         if (jsonDecision) {
             try {
@@ -149,18 +142,15 @@ async function cargarEstado() {
                 actualizarTexto("zona_vision", obj.zona || "--");
             } catch(e) { console.error("Error parseando decisión JSON", e); }
         } else {
-            // Respaldo por si Flask ya los entrega como variables separadas
             if (estadoActual.decision) actualizarTexto("decision_vision", estadoActual.decision);
             if (estadoActual.zona) actualizarTexto("zona_vision", estadoActual.zona);
         }
 
-        // 2. Extraer y mostrar nuevo evento (si es distinto al último)
         let nuevoEvento = estadoActual.evento_vision || estadoActual.evento || estadoActual["casa/vision/evento"];
         if (nuevoEvento && nuevoEvento !== ultimoEvento) {
             agregarNotificacion(nuevoEvento);
-            ultimoEvento = nuevoEvento; // Actualizar para no repetir en el próximo segundo
+            ultimoEvento = nuevoEvento;
         }
-        // =====================================
 
         const foco = valorNumero(estadoActual.foco, 0);
         const vent = valorNumero(estadoActual.vent, 0);

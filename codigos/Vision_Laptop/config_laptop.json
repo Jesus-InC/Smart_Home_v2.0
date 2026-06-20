@@ -1,0 +1,262 @@
+{
+  "mqtt": {
+    "host": "192.168.0.101",
+    "port": 1883,
+    "topic_percepcion": "casa/vision/percepcion",
+    "topic_estado": "casa/vision/laptop/estado",
+    "topic_porton_estado": "casa/garaje/porton/estado"
+  },
+  "camaras": {
+    "abc": {
+      "indice": 1,
+      "backend": "MSMF",
+      "ancho": 1280,
+      "alto": 720,
+      "fps": 15,
+      "fourcc": "",
+      "calentamiento_s": 4.0,
+      "reintento_s": 2.0
+    },
+    "d": {
+      "indice": 2,
+      "backend": "MSMF",
+      "ancho": 640,
+      "alto": 480,
+      "fps": 15,
+      "fourcc": "",
+      "calentamiento_s": 4.0,
+      "reintento_s": 2.0
+    }
+  },
+  "zonas_abc": {
+    "A": [
+      [
+        0.90234,
+        0.45417
+      ],
+      [
+        0.66953,
+        0.35139
+      ],
+      [
+        0.5875,
+        0.82639
+      ],
+      [
+        0.90938,
+        0.90972
+      ]
+    ],
+    "B": [
+      [
+        0.64844,
+        0.3125
+      ],
+      [
+        0.54375,
+        0.85694
+      ],
+      [
+        0.38906,
+        0.77639
+      ],
+      [
+        0.50625,
+        0.25556
+      ]
+    ],
+    "C": [
+      [
+        0.66563,
+        0.27083
+      ],
+      [
+        0.51719,
+        0.21806
+      ],
+      [
+        0.57344,
+        0.01528
+      ],
+      [
+        0.71484,
+        0.01528
+      ]
+    ]
+  },
+  "zona_d": [
+    [
+      0.25312,
+      0.33333
+    ],
+    [
+      0.7375,
+      0.35
+    ],
+    [
+      0.75313,
+      0.6875
+    ],
+    [
+      0.65469,
+      0.89583
+    ],
+    [
+      0.34219,
+      0.91458
+    ],
+    [
+      0.26562,
+      0.66042
+    ]
+  ],
+  "deteccion_referencia": {
+    "frames_calibracion": 40,
+    "umbral_diferencia_abc": 28,
+    "umbral_diferencia_d": 25,
+    "area_min_abc": 1800,
+    "area_min_d": 600,
+    "morfologia_kernel": 5,
+    "max_objetos": 5
+  },
+  "perfil_dueno": {
+    "zona": "A",
+    "hsv_centro": [
+      175,
+      106,
+      255
+    ],
+    "hsv_tolerancia": [
+      10,
+      35,
+      35
+    ],
+    "area_ratio_esperada": 0.05114,
+    "area_ratio_tolerancia": 0.02731,
+    "aspecto_esperado": 1.3588,
+    "aspecto_tolerancia": 0.648,
+    "extent_esperado": 0.6853,
+    "extent_tolerancia": 0.1933,
+    "metodo": "multimuestreo_por_zona_detector_referencia",
+    "muestras_usadas": 60
+  },
+  "score": {
+    "p_yolo_dueno": 25,
+    "p_color": 25,
+    "p_tamano": 15,
+    "p_aspecto": 15,
+    "p_silueta": 10,
+    "p_trayectoria": 10,
+    "umbral_dueno": 70,
+    "umbral_dudoso": 40
+  },
+  "seguimiento": {
+    "ventana_s": 5.0,
+    "frames_estables_zona": 2,
+    "desplazamiento_min_norm": 0.025,
+    "permitir_ingreso_directo_a": false
+  },
+  "yolo": {
+    "usar": true,
+    "modelo": "modelos/best_cls.pt",
+    "clase_dueno": "auto_dueno",
+    "clases_vehiculo": [
+      "auto_dueno",
+      "otro_auto"
+    ],
+    "confianza_min": 0.7,
+    "imgsz": 224,
+    "cada_n_frames": 3,
+    "tarea": "clasificacion",
+    "margen_crop": 0.12,
+    "validacion_hibrida": true,
+    "score_visual_minimo_para_yolo": 50,
+    "score_visual_minimo_por_zona": {
+      "A": 50,
+      "B": 50,
+      "C": 45
+    },
+    "componentes_minimos_por_zona": {
+      "A": {
+        "color": 20,
+        "tamano": 8
+      },
+      "B": {
+        "tamano": 9
+      },
+      "C": {
+        "tamano": 5
+      }
+    }
+  },
+  "calidad": {
+    "brillo_minimo": 35.0,
+    "confianza_minima": 0.4
+  },
+  "publicacion": {
+    "hz": 5.0,
+    "publicar_topicos_individuales": true
+  },
+  "zonas_ignorar_d": [],
+  "estabilizacion": {
+    "ventana_s": 0.8,
+    "intervalo_muestra_s": 0.1,
+    "muestras_minimas": 4,
+    "ausencia_reset_s": 0.4,
+    "mantener_ingreso_s": 0.8
+  },
+  "extraccion_color": {
+    "saturacion_min": 55,
+    "valor_min": 55,
+    "min_pixeles": 80,
+    "erosion_px": 2
+  },
+  "seguridad_d": {
+    "margen_px": 20
+  },
+  "perfiles_dueno": {
+    "A": {
+      "zona": "A",
+      "hsv_centro": [
+        175,
+        106,
+        255
+      ],
+      "hsv_tolerancia": [
+        10,
+        35,
+        35
+      ],
+      "area_ratio_esperada": 0.05114,
+      "area_ratio_tolerancia": 0.02731,
+      "aspecto_esperado": 1.3588,
+      "aspecto_tolerancia": 0.648,
+      "extent_esperado": 0.6853,
+      "extent_tolerancia": 0.1933,
+      "metodo": "multimuestreo_por_zona_detector_referencia",
+      "muestras_usadas": 60
+    },
+    "B": {
+      "zona": "B",
+      "hsv_centro": [
+        173,
+        80,
+        251
+      ],
+      "hsv_tolerancia": [
+        10,
+        35,
+        110
+      ],
+      "area_ratio_esperada": 0.0437,
+      "area_ratio_tolerancia": 0.03828,
+      "aspecto_esperado": 0.763,
+      "aspecto_tolerancia": 0.25,
+      "extent_esperado": 0.5351,
+      "extent_tolerancia": 0.1995,
+      "metodo": "multimuestreo_por_zona_detector_referencia",
+      "muestras_usadas": 60
+    }
+  },
+  "perfiles_dueno_version": 1
+}

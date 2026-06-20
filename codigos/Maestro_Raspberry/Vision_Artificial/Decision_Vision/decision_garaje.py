@@ -280,7 +280,6 @@ class LogicaDecisionGaraje:
         
         obstaculo_d = bool(percepcion.get("obstaculo_d", False))
 
-        # Ventana de gracia: ignorar falso positivo de D por 2.5s al arrancar el cierre
         tiempo_desde_comando = ahora - self.ciclo.tiempo_ultimo_comando
         if porton == "CERRANDO" and tiempo_desde_comando < 2.5:
             obstaculo_d = False
@@ -291,7 +290,6 @@ class LogicaDecisionGaraje:
                 "Zona D ocupada detectada" if obstaculo_d else "Zona D nuevamente libre"
             )
 
-        # La zona D es una protección independiente del modo automático.
         if obstaculo_d:
             self.ciclo.paso_por_d_detectado = self.ciclo.ciclo_ingreso_activo or self.ciclo.paso_por_d_detectado
             self.ciclo.d_libre_desde = None
@@ -306,7 +304,6 @@ class LogicaDecisionGaraje:
             if self.ciclo.d_libre_desde is None:
                 self.ciclo.d_libre_desde = ahora
             
-            # REANUDAR CIERRE TRAS RETIRAR OBSTÁCULO (Solo Modos Automáticos)
             if porton == "DETENIDO" and modo in {"NORMAL", "VISITA"}:
                 espera_d = float(self.cfg["umbrales"].get("t_d_libre_para_cerrar_s", 2.5))
                 if ahora - self.ciclo.d_libre_desde > espera_d:
@@ -327,7 +324,6 @@ class LogicaDecisionGaraje:
         if self._condicion_critica(percepcion, ahora, porton, modo):
             return
 
-        # Cierre automático para NORMAL y VISITA
         if self._evaluar_cierre_automatico(percepcion, estado, ahora):
             return
 
@@ -335,7 +331,6 @@ class LogicaDecisionGaraje:
             self.ciclo.ultima_decision = "Zona D ocupada: movimiento automático bloqueado"
             return
 
-        # Congelamiento del dueño (Retención de alarma al abrir)
         if porton in {"ABRIENDO", "ABIERTO"}:
             self.ciclo.baja_confianza_desde = None
             self.ciclo.multiples_desde = None
